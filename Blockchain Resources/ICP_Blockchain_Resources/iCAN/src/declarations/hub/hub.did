@@ -1,0 +1,134 @@
+type hub = 
+ service {
+   addOwner: (principal) -> (Result);
+   canisterStatus: (principal) -> (Result_5);
+   changeOwner: (vec principal) -> (Result);
+   clearLog: () -> ();
+   delCanister: (principal) -> (Result);
+   deleteOwner: (principal) -> (Result);
+   deployCanister: (DeployArgs) -> (Result_4);
+   depositCycles: (principal, nat) -> (Result);
+   getCanisters: () -> (Result_3) query;
+   getLog: () -> (vec record {
+                        nat;
+                        text;
+                      }) query;
+   getOwners: () -> (vec principal) query;
+   getStatus: () -> (Result_2) query;
+   getVersion: () -> (nat) query;
+   getWasm: (principal) -> (Result_1) query;
+   init: (principal, vec nat8) -> ();
+   installCycleWasm: (vec nat8) -> (Result);
+   installWasm: (InstallArgs) -> (Result);
+   isOwner: () -> (bool) query;
+   putCanister: (Canister) -> (Result);
+   startCanister: (principal) -> (Result);
+   stopCanister: (principal) -> (Result);
+   updateCanisterSettings: (UpdateSettingsArgs) -> (Result);
+   wallet_receive: () -> ();
+ };
+type definite_canister_settings = 
+ record {
+   compute_allocation: nat;
+   controllers: vec principal;
+   freezing_threshold: nat;
+   memory_allocation: nat;
+ };
+type canister_settings = 
+ record {
+   compute_allocation: opt nat;
+   controllers: opt vec principal;
+   freezing_threshold: opt nat;
+   memory_allocation: opt nat;
+ };
+type UpdateSettingsArgs = 
+ record {
+   canister_id: principal;
+   settings: canister_settings;
+ };
+type Status = 
+ record {
+   cycle_balance: nat;
+   memory: nat;
+ };
+type Result_5 = 
+ variant {
+   err: Error;
+   ok: CanisterStatus;
+ };
+type Result_4 = 
+ variant {
+   err: Error;
+   ok: principal;
+ };
+type Result_3 = 
+ variant {
+   err: Error;
+   ok: vec Canister;
+ };
+type Result_2 = 
+ variant {
+   err: Error;
+   ok: Status;
+ };
+type Result_1 = 
+ variant {
+   err: Error;
+   ok: vec nat8;
+ };
+type Result = 
+ variant {
+   err: Error;
+   ok;
+ };
+type InstallArgs = 
+ record {
+   arg: vec nat8;
+   canister_id: principal;
+   mode: variant {
+           install;
+           reinstall;
+           upgrade;
+         };
+   wasm_module: vec nat8;
+ };
+type Error = 
+ variant {
+   Create_Canister_Failed: nat;
+   Insufficient_Cycles;
+   Invalid_Caller;
+   Invalid_CanisterId;
+   Ledger_Transfer_Failed: nat;
+   No_Record;
+   No_Wasm;
+ };
+type DeployArgs = 
+ record {
+   cycle_amount: nat;
+   deploy_arguments: opt vec nat8;
+   description: text;
+   name: text;
+   preserve_wasm: bool;
+   settings: opt canister_settings;
+   wasm: opt vec nat8;
+ };
+type CanisterStatus = 
+ record {
+   cycles: nat;
+   memory_size: nat;
+   module_hash: opt blob;
+   settings: definite_canister_settings;
+   status: variant {
+             running;
+             stopped;
+             stopping;
+           };
+ };
+type Canister = 
+ record {
+   canister_id: principal;
+   description: text;
+   name: text;
+   wasm: opt vec nat8;
+ };
+service : () -> hub

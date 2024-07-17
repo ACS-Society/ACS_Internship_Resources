@@ -1,0 +1,46 @@
+type TransformArgs = 
+ record {
+   icp_amount: nat64;
+   to_canister_id: principal;
+ };
+type Result_1 = 
+ variant {
+   err: Error;
+   ok: principal;
+ };
+type Result = 
+ variant {
+   err: Error;
+   ok;
+ };
+type Error = 
+ variant {
+   Create_Canister_Failed: nat;
+   Insufficient_Cycles;
+   Invalid_Caller;
+   Invalid_CanisterId;
+   Ledger_Transfer_Failed: nat;
+   No_Record;
+   No_Wasm;
+ };
+service : {
+  addHub: (text, principal) -> (text);
+  changeAdministrator: (vec principal) -> (text);
+  createHub: (text, nat64) -> (Result_1);
+  deleteHub: (principal) -> (Result);
+  getAdministrators: () -> (vec principal) query;
+  getHub: () -> (vec record {
+                       text;
+                       principal;
+                     }) query;
+  get_log: () -> (vec record {
+                       nat;
+                       text;
+                     }) query;
+  getWasms: () -> (vec nat8, vec nat8) query;
+  topUpSelf: (principal) -> ();
+  transformIcp: (TransformArgs) -> (Result);
+  uploadCycleWasm: (vec nat8) -> (text);
+  uploadHubWasm: (vec nat8) -> (text);
+  wallet_receive: () -> ();
+}
