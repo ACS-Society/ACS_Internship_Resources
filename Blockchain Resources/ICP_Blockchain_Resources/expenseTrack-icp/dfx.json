@@ -1,0 +1,29 @@
+{
+  "canisters": {
+    "expenseTrack_backend": {
+      "main": "src/expenseTrack_backend/main.mo",
+      "type": "motoko"
+    },
+    "expenseTrack_frontend": {
+      "dependencies": [
+        "expenseTrack_backend"
+      ],
+      "frontend": {
+        "entrypoint": "src/expenseTrack_frontend/src/index.html"
+      },
+      "source": [
+        "src/expenseTrack_frontend/assets",
+        "dist/expenseTrack_frontend/"
+      ],
+      "type": "assets"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1
+}
