@@ -1,109 +1,63 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-contract MultiSigWallet {
+contract Auction {
+    
+    address payable public owner;
+    uint public auctionEndTime;
+    address public highestBidder;
+    uint public highestBid;
+    mapping(address => uint) public pendingReturns;
+    bool ended;
 
+    event HighestBidIncreased(address bidder, uint amount);
+    event AuctionEnded(address winner, uint amount);
 
-    event TransactionSubmitted(uint256 txIndex, address indexed sender, address indexed to, uint256 amount, string data);
-    event TransactionConfirmed(uint256 txIndex, address indexed owner);
-    event TransactionExecuted(uint256 txIndex);
-    event TransactionRevoked(uint256 txIndex, address indexed owner);
-
-    struct Transaction {
-        address to;
-        uint256 amount;
-        string data;
-        bool executed;
-        uint256 confirmations;
-        mapping(address => bool) isConfirmed;
+    constructor(uint _biddingTime) {
+        owner = payable(msg.sender);
+        auctionEndTime = block.timestamp + _biddingTime;
     }
 
-    address[] public owners;
-    uint256 public required;
-    mapping(uint256 => Transaction) public transactions;
-    uint256 public transactionCount;
+    function bid() public payable {
+        require(
+            block.timestamp <= auctionEndTime,
+            "Auction already ended."
+        );
+        require(
+            msg.value > highestBid,
+            "There already is a higher bid."
+        );
 
-    modifier onlyOwner() {
-        require(isOwner(msg.sender), "Not an owner");
-        _;
-    }
-
-    modifier txExists(uint256 _txIndex) {
-        require(_txIndex < transactionCount, "Transaction does not exist");
-        _;
-    }
-
-    modifier notExecuted(uint256 _txIndex) {
-        require(!transactions[_txIndex].executed, "Transaction already executed");
-        _;
-    }
-
-    modifier notConfirmed(uint256 _txIndex) {
-        require(!transactions[_txIndex].isConfirmed[msg.sender], "Transaction already confirmed");
-        _;
-    }
-
-    constructor(address[] memory _owners, uint256 _required) {
-        require(_owners.length > 0, "Owners required");
-        require(_required > 0 && _required <= _owners.length, "Invalid required number of confirmations");
-
-        for (uint i = 0; i < _owners.length; i++) {
-            owners.push(_owners[i]);
+        if (highestBid != 0) {
+            pendingReturns[highestBidder] += highestBid;
         }
-        required = _required;
+
+        highestBidder = msg.sender;
+        highestBid = msg.value;
+        emit HighestBidIncreased(msg.sender, msg.value);
     }
 
-    function isOwner(address _addr) public view returns (bool) {
-        for (uint i = 0; i < owners.length; i++) {
-            if (owners[i] == _addr) return true;
+    function withdraw() public returns (bool) {
+        uint amount = pendingReturns[msg.sender];
+        if (amount > 0) {
+            pendingReturns[msg.sender] = 0;
+
+            if (!payable(msg.sender).send(amount)) {
+                pendingReturns[msg.sender] = amount;
+                return false;
+            }
         }
-        return false;
+        return true;
     }
 
-    function submitTransaction(address _to, uint256 _amount, string memory _data) external onlyOwner {
-        uint256 txIndex = transactionCount++;
-        Transaction storage txn = transactions[txIndex];
-        txn.to = _to;
-        txn.amount = _amount;
-        txn.data = _data;
-        txn.executed = false;
-        txn.confirmations = 0;
+    function auctionEnd() public {
+        require(msg.sender == owner, "You are not the auction owner.");
+        require(block.timestamp >= auctionEndTime, "Auction not yet ended.");
+        require(!ended, "auctionEnd has already been called.");
 
-        emit TransactionSubmitted(txIndex, msg.sender, _to, _amount, _data);
+        ended = true;
+        emit AuctionEnded(highestBidder, highestBid);
+
+        owner.transfer(highestBid);
     }
-
-    function confirmTransaction(uint256 _txIndex) external onlyOwner txExists(_txIndex) notExecuted(_txIndex) notConfirmed(_txIndex) {
-        Transaction storage txn = transactions[_txIndex];
-        txn.isConfirmed[msg.sender] = true;
-        txn.confirmations++;
-
-        emit TransactionConfirmed(_txIndex, msg.sender);
-
-        if (txn.confirmations >= required) {
-            executeTransaction(_txIndex);
-        }
-    }
-
-    function executeTransaction(uint256 _txIndex) internal txExists(_txIndex) notExecuted(_txIndex) {
-        Transaction storage txn = transactions[_txIndex];
-        require(txn.confirmations >= required, "Not enough confirmations");
-
-        txn.executed = true;
-        (bool success, ) = txn.to.call{value: txn.amount}(bytes(txn.data));
-        require(success, "Transaction failed");
-
-        emit TransactionExecuted(_txIndex);
-    }
-
-    function revokeConfirmation(uint256 _txIndex) external onlyOwner txExists(_txIndex) notExecuted(_txIndex) {
-        Transaction storage txn = transactions[_txIndex];
-        require(txn.isConfirmed[msg.sender], "Transaction not confirmed");
-
-        txn.isConfirmed[msg.sender] = false;
-        txn.confirmations--;
-
-        emit TransactionRevoked(_txIndex, msg.sender);
-    }
-
-    receive() external payable {}
 }
