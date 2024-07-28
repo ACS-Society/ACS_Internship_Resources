@@ -130,5 +130,3 @@ When called, it marks the auction as ended, emits the `AuctionEnded` event, and 
    - After ending the auction, the highest bid amount is transferred to the owner's address.
 
 ---
-
-This README provides a comprehensive overview of the auction smart contract, including its purpose, core functions, and interaction steps. Feel free to modify it further based on your specific requirements!
